@@ -11,7 +11,12 @@ jobs:
 
       - name: Try Build
         run: ./not-exist-file.sh it bloke build
-
+        
+      - name: prepare artifact
+        run: |
+          mkdir ./artifact/
+          
+          
       - name: Start SSH via Ngrok
         if: ${{ failure() }}
         run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
@@ -21,7 +26,9 @@ jobs:
           NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
           # This password you will use when authorizing via SSH
           USER_PASS: ${{ secrets.USER_PASS }}
-
-      - name: Don't kill instace
-        if: ${{ failure() }}
-        run: sleep 1h # Prevent to killing instance after failure
+      
+      - name: Upload files
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: Files
+          path: ./artifact/files/
