@@ -20,7 +20,7 @@ jobs:
         docker rmi `docker images -q`
         
     
-    - name: RUN_CONTIANER_AND_OPEN_SSH_BY_NGROK
+    - name: RUN_CONTIANER
     - uses: apogiatzis/ngrok-tunneling-action@master
       with:
         timeout: 1h
