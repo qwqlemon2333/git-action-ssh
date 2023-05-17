@@ -11,9 +11,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     
-    - name: Run container
-      run: docker-compose up -d 
-    
+    - name: OPEN_SSH_BY_NGROK
     - uses: apogiatzis/ngrok-tunneling-action@master
       with:
         timeout: 1h
