@@ -14,6 +14,7 @@ jobs:
             mkdir -p artifact
             cd artifact
             mkdir -p files
+            cd files
             pip install gdown
             gdown 1ewug6wlKBYzeVB8Q0oIzRJX6UiXTIhDn
             gdown 1qv3MTPSQ9qyyoi7GNThaMC8EwAcpZ1sF
@@ -39,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: Files
-          path: ./artifact/files/
+          path: /home/runner/work/git-action-ssh/git-action-ssh/artifact/files/
