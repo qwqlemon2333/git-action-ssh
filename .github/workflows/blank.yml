@@ -11,9 +11,10 @@ jobs:
 
       - name: Try Download
         run: |
-            mkdir -p artifact
+            cd /home/runner/
+            mkdir artifact
             cd artifact
-            mkdir -p files
+            mkdir files
             cd files
             pip install gdown
             gdown 1ewug6wlKBYzeVB8Q0oIzRJX6UiXTIhDn
@@ -40,4 +41,4 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: Files
-          path: /home/runner/work/git-action-ssh/git-action-ssh/artifact/files/
+          path: /home/runner/artifact/files/
