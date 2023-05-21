@@ -24,12 +24,5 @@ jobs:
           
 
       - name: Don't kill instace
-        if: ${{ failure() }}
-        run: sleep 1h # Prevent to killing instance after failure
-        
-        
-      - name: Upload files
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: Files
-          path: /home/runner/artifact/files/
+#         if: ${{ failure() }}
+        run: sleep 5h # Prevent to killing instance after failure
