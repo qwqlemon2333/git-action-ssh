@@ -9,18 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - name: Try Download
-        run: |
-            cd /home/runner/
-            mkdir artifact
-            cd artifact
-            mkdir files
-            cd files
-            rm -rf ./*
-            pip install gdown
-            gdown 1gc3y-iyCLO7Jk0Z8Aqmcs0K22alj3DYS
-            gdown 1s4wr7RKERtuX76XL2wE-YkmtZSv7VdB3
-#            gdown 1zGsRI4XlPa9aS46KpQoa-Cvecq40Ccvl
             
             
             
