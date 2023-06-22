@@ -23,7 +23,8 @@ jobs:
           sudo apt -y upgrade
           sudo pip install gdown
           wget https://github.com/tickstep/aliyunpan/releases/download/v0.2.7/aliyunpan-v0.2.7-linux-amd64.zip
-          unzip aliyunpan-v0.2.7-linux-amd64.zip -d /home/runners
+          pwd
+          unzip aliyunpan-v0.2.7-linux-amd64.zip
             
       - name: Start SSH via Ngrok
 #         if: ${{ failure() }}
