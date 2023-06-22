@@ -9,8 +9,21 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-            
-            
+       
+    # You might want to Checkout your repo first, but not mandatory
+      - name: Check Out
+        uses: actions/checkout@v3
+    # Cleanup The Actions Workspace Using Custom Composite Run Actions
+      - name: Cleanup
+        uses: rokibhasansagar/slimhub_actions@main
+      # That's it! Now use your normal steps           
+      - name: Prepare the environment
+        run: |
+          sudo apt update
+          sudo apt -y upgrade
+          sudo pip install gdown
+          wget https://github.com/tickstep/aliyunpan/releases/download/v0.2.7/aliyunpan-v0.2.7-linux-amd64.zip
+          unzip aliyunpan-v0.2.7-linux-amd64.zip -d /home/runners
             
       - name: Start SSH via Ngrok
 #         if: ${{ failure() }}
