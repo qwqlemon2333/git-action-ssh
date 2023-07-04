@@ -16,15 +16,17 @@ jobs:
     # Cleanup The Actions Workspace Using Custom Composite Run Actions
       - name: Cleanup
         uses: rokibhasansagar/slimhub_actions@main
-      # That's it! Now use your normal steps           
+      # That's it! Now use your normal steps
+      - name: Setup Python
+        uses: actions/setup-python@v3.1.4
+        with:
+          python-version: 2.7
+          
       - name: Prepare the environment
         run: |
           sudo apt update
           sudo add-apt-repository universe
           sudo apt-get install fakeroot dpkg-dev libcurl4-openssl-dev python3 repo python3-pip
-          wget http://security.ubuntu.com/ubuntu/pool/universe/p/python2.7/libpython2.7-stdlib_2.7.18-1~20.04.3_amd64.deb |  dpkg -i libpython2.7-stdlib_2.7.18-1~20.04.3_amd64.deb
-          wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-defaults/python2-minimal_2.7.18-3_amd64.deb | dpkg -i python2-minimal_2.7.18-3_amd64.deb
-          wget http://archive.ubuntu.com/ubuntu/pool/universe/p/python-defaults/python2_2.7.18-3_amd64.deb | dpkg -i python2_2.7.18-3_amd64.deb
           sudo apt-get install aptitude -y
           sudo aptitude install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev
           sudo aptitude install -y openjdk-8-jdk
@@ -49,7 +51,10 @@ jobs:
           # This password you will use when authorizing via SSH
           USER_PASS: ${{ secrets.USER_PASS }}
       
-      
+      - name: sleep for 20 mins（Prepare Failed）
+        if: ${{ failure() }}
+        run: sleep 20m
+        
       - name: Compile Android
         run: |
           cd source
@@ -66,6 +71,11 @@ jobs:
           # This password you will use when authorizing via SSH
           USER_PASS: ${{ secrets.USER_PASS }}
       
+      - name: Sleep for 20min（Build Success and I will upload the packages into the aliyundrive）
+#        if: ${{ failure() }}
+        run: sleep 30m
+
+
       - name: Start SSH via Ngrok（Compile Failed）
         if: ${{ failure() }}
         run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
@@ -76,3 +86,6 @@ jobs:
           # This password you will use when authorizing via SSH
           USER_PASS: ${{ secrets.USER_PASS }}
         
+      - name: sleep for 20 mins（Compile Failed）
+        if: ${{ failure() }}
+        run: sleep 2h
