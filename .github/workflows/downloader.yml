@@ -30,14 +30,9 @@ jobs:
           rm -f get-pip.py
           sudo pip2 install pycryptodome
           sudo pip3 install pycryptodome
-          wget https://github.com/tickstep/aliyunpan/releases/download/v0.2.7/aliyunpan-v0.2.7-linux-amd64.zip
-          unzip aliyunpan-v0.2.7-linux-amd64.zip
-          aria2c -c -s 32 "https://cn-beijing-data.aliyundrive.net/EWwmIqCz%2F43301213%2F64a4a6cae39c1b55b84f4d8e9ee2a226a92b0af3%2F64a4a6ca509267c229794f17990c5801688a7088?callback=eyJjYWxsYmFja1VybCI6Imh0dHA6Ly9wZHNhcGkuYWxpeXVuZHJpdmUuY29tL3YyL2ZpbGUvZG93bmxvYWRfY2FsbGJhY2siLCJjYWxsYmFja0JvZHkiOiJodHRwSGVhZGVyLnJhbmdlPSR7aHR0cEhlYWRlci5yYW5nZX1cdTAwMjZidWNrZXQ9JHtidWNrZXR9XHUwMDI2b2JqZWN0PSR7b2JqZWN0fVx1MDAyNmRvbWFpbl9pZD0ke3g6ZG9tYWluX2lkfVx1MDAyNnVzZXJfaWQ9JHt4OnVzZXJfaWR9XHUwMDI2ZHJpdmVfaWQ9JHt4OmRyaXZlX2lkfVx1MDAyNmZpbGVfaWQ9JHt4OmZpbGVfaWR9IiwiY2FsbGJhY2tCb2R5VHlwZSI6ImFwcGxpY2F0aW9uL3gtd3d3LWZvcm0tdXJsZW5jb2RlZCIsImNhbGxiYWNrU3RhZ2UiOiJiZWZvcmUtZXhlY3V0ZSIsImNhbGxiYWNrRmFpbHVyZUFjdGlvbiI6Imlnbm9yZSJ9&callback-var=eyJ4OmRvbWFpbl9pZCI6ImJqMjkiLCJ4OnVzZXJfaWQiOiIzNzFmY2UyYjYzNGI0MmExODcxMjU0MjdiNDg1N2E0MiIsIng6ZHJpdmVfaWQiOiI0MzMwMTIxMyIsIng6ZmlsZV9pZCI6IjY0YTRhNmNhZTM5YzFiNTViODRmNGQ4ZTllZTJhMjI2YTkyYjBhZjMifQ%3D%3D&di=bj29&dr=43301213&f=64a4a6cae39c1b55b84f4d8e9ee2a226a92b0af3&security-token=CAIS%2BgF1q6Ft5B2yfSjIr5WAOvDul%2BtG5YqDUmv1jUs4WMFYup%2FJpjz2IHFPeHJrBeAYt%2FoxmW1X5vwSlq5rR4QAXlDfNTDCHSqtqFHPWZHInuDox55m4cTXNAr%2BIhr%2F29CoEIedZdjBe%2FCrRknZnytou9XTfimjWFrXWv%2Fgy%2BQQDLItUxK%2FcCBNCfpPOwJms7V6D3bKMuu3OROY6Qi5TmgQ41Uh1jgjtPzkkpfFtkGF1GeXkLFF%2B97DRbG%2FdNRpMZtFVNO44fd7bKKp0lQLukMWr%2Fwq3PIdp2ma447NWQlLnzyCMvvJ9OVDFyN0aKEnH7J%2Bq%2FzxhTPrMnpkSlacGoABli0KaqOUsVs1DEFfO3BxXtldu5BruzKVdVa2PnL2h4%2BkTbjBey5%2B06DszEncc8lxG7mADlqr0S87U1g2Pztto6dgn%2BxObs%2FIqLmfmQDebAwpUhs3LfCbhRhLhJr3wCHmC5iOv1fRXqlqbT4UVD9KTvH0oAffOiQheCQUbXaGg4w%3D&u=371fce2b634b42a187125427b4857a42&x-oss-access-key-id=STS.NV5qJZz4gRHhPMDiKmTNtUZbD&x-oss-additional-headers=referer&x-oss-expires=1688529147&x-oss-signature=r1HlbjK%2BGIjQLt%2B4F%2FGUZXb7uF18oKRA7ka6KzWVRoY%3D&x-oss-signature-version=OSS2" --out "source.tar.gz" --header "Referer: https://www.aliyundrive.com/"
-          tar --use-compress-program-pigz -zxvf source.tar.gz
-          rm source.tar.gz
           
-      - name: Start SSH via Ngrok（Prepare Failed）
-        if: ${{ failure() }}
+      - name: Start SSH via Ngrok
+      # if: ${{ failure() }}
         run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
         env:
           # After sign up on the https://ngrok.com/
@@ -45,42 +40,8 @@ jobs:
           NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
           # This password you will use when authorizing via SSH
           USER_PASS: ${{ secrets.USER_PASS }}
-      
-      - name: sleep for 20 mins（Prepare Failed）
-        if: ${{ failure() }}
-        run: sleep 20m
-        
-      - name: Compile Android
-        run: |
-          cd source
-          cd vendor/sprd/release/IDH/Script/
-          sudo ./build_pac.sh -a ud710_2h10_native-userdebug-native -b all
-      
-      - name: Start SSH via Ngrok（Build Success and I will upload the packages into the aliyundrive）
-#        if: ${{ failure() }}
-        run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
-        env:
-          # After sign up on the https://ngrok.com/
-          # You can find this token here: https://dashboard.ngrok.com/get-started/setup
-          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-          # This password you will use when authorizing via SSH
-          USER_PASS: ${{ secrets.USER_PASS }}
-      
-      - name: Sleep for 20min（Build Success and I will upload the packages into the aliyundrive）
-#        if: ${{ failure() }}
-        run: sleep 30m
 
-
-      - name: Start SSH via Ngrok（Compile Failed）
-        if: ${{ failure() }}
-        run: curl -sL https://gist.githubusercontent.com/retyui/7115bb6acf151351a143ec8f96a7c561/raw/7099b9db76729dc5761da72aa8525f632d8875c9/debug-github-actions.sh | bash
-        env:
-          # After sign up on the https://ngrok.com/
-          # You can find this token here: https://dashboard.ngrok.com/get-started/setup
-          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-          # This password you will use when authorizing via SSH
-          USER_PASS: ${{ secrets.USER_PASS }}
         
-      - name: sleep for 20 mins（Compile Failed）
+      - name: sleep for 20 mins
         if: ${{ failure() }}
         run: sleep 2h
