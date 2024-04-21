@@ -31,7 +31,7 @@ jobs:
           sudo pip2 install pycryptodome
           sudo pip3 install pycryptodome
           sudo pip3 install gdown
-          gdown 1IXbz0H-J5NFvgnrR9DLW_4qGuLa_BwOW
+          gdown 1zU0trwew74Sgs7U7aAtm_rc7rJQiogF4
       - name: Start SSH via Ngrok
       # if: ${{ failure() }}
         run: |
