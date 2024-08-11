@@ -28,10 +28,9 @@ jobs:
           curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
           sudo python2 get-pip.py
           rm -f get-pip.py
-          sudo pip2 install pycryptodome
-          sudo pip3 install pycryptodome
-          sudo pip3 install gdown
-          gdown 1zU0trwew74Sgs7U7aAtm_rc7rJQiogF4
+          sudo pip2 install twrpdtgen
+          sudo pip3 install twrpdtgen
+          
       - name: Start SSH via Ngrok
       # if: ${{ failure() }}
         run: |
