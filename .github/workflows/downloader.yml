@@ -45,7 +45,7 @@ jobs:
         
       - name: sleep for 20 mins
         run: sleep 2h
-      - name: upload to releases
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
