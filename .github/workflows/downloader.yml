@@ -44,7 +44,9 @@ jobs:
 # sb
         
       - name: sleep for 20 mins
-        run: sleep 45min
+        run: |
+          pwd
+          sleep 45m
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
