@@ -29,7 +29,7 @@ jobs:
           # sudo python2 get-pip.py
           sudo apt install cpio python3 git -y
           sudo su
-          git clone https://github.com/AndroidDumps/dumpyara.git .
+          git clone https://github.com/AndroidDumps/dumpyara.git
           # rm -f get-pip.py
           
       - name: Start SSH via Ngrok
