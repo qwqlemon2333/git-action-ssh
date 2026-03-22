@@ -32,19 +32,112 @@ jobs:
           git clone https://github.com/AndroidDumps/dumpyara.git
           # rm -f get-pip.py
           
-      - name: Start SSH via Ngrok
-      # if: ${{ failure() }}
+      - name: Start Tunnels and Notify Users
         run: |
-          curl -sL https://gist.githubusercontent.com/qwqlemon2333/1c9a4e04cf7fd3bd5b95a2e56b682d08/raw/5ba0fdf624ecf64f337ffead7b9f7d1cd5614140/debug-github-actions.sh | bash
-        env:
-          # After sign up on the https://ngrok.com/
-          # You can find this token here: https://dashboard.ngrok.com/get-started/setup
-          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-          # This password you will use when authorizing via SSH
-          USER_PASS: ${{ secrets.USER_PASS }}
-# sb
+          # ==========================================
+          # 1. 基础环境配置
+          # ==========================================
+          sudo apt-get update > /dev/null 2>&1
+          sudo apt-get install -y openssh-server curl jq > /dev/null 2>&1
+          echo "root:${{ secrets.USER_PASS }}" | sudo chpasswd
+          sudo service ssh start
+
+          # ==========================================
+          # 2. 启动 Serveo
+          # ==========================================
+          SERVEO_HANDLE=$(date +%s%3N)
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -N -R $SERVEO_HANDLE:22:localhost:22 serveo.net > serveo.log 2>&1 &
+
+          # ==========================================
+          # 3. 启动 Cloudflared
+          # ==========================================
+          wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+          chmod +x cloudflared
+          ./cloudflared tunnel --url ssh://localhost:22 > cloudflared.log 2>&1 &
+
+          # ==========================================
+          # 4. 启动 Ngrok
+          # ==========================================
+          wget -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+          tar -xzf ngrok-v3-stable-linux-amd64.tgz
+          chmod +x ./ngrok
+          ./ngrok authtoken ${{ secrets.NGROK_TOKEN }}
+          ./ngrok tcp 22 --log ".ngrok.log" &
+
+          # ==========================================
+          # 5. 等待初始化
+          # ==========================================
+          echo "Waiting for tunnels..."
+          sleep 10
+
+          # ==========================================
+          # 6. 准备报告内容
+          # ==========================================
+          
+          # --- Ngrok 处理 ---
+          NGROK_URL=$(grep -o -E "tcp://(.+)" < .ngrok.log | sed "s/tcp:\/\///" | head -n 1)
+          if [[ -n "$NGROK_URL" ]]; then
+            NGROK_HOST=$(echo $NGROK_URL | cut -d: -f1)
+            NGROK_PORT=$(echo $NGROK_URL | cut -d: -f2)
+            TEST_LINK="https://www.itdog.cn/tcping/${NGROK_HOST}:${NGROK_PORT}/"
+            NGROK_MSG="**Ngrok:** \`ssh root@${NGROK_HOST} -p ${NGROK_PORT}\`\n测速链接: [点击查看全国延迟](${TEST_LINK})"
+          else
+            NGROK_MSG="**Ngrok:** 启动失败"
+          fi
+
+          # --- Serveo 处理 ---
+          SERVEO_MSG="**Serveo:** \`ssh -J serveo.net root@${SERVEO_HANDLE}\`\n测速链接: [点击查看 Serveo 延迟](https://www.itdog.cn/tcping/serveo.net:22/)"
+
+          # --- Cloudflared 处理 ---
+          CF_URL=$(grep -o 'https://.*\.trycloudflare\.com' cloudflared.log | head -n 1)
+          if [[ -n "$CF_URL" ]]; then
+            CF_HOST=$(echo $CF_URL | sed 's/https:\/\///')
+            CF_MSG="**Cloudflared:** \`${CF_URL}\`\n测速链接: [点击查看 Cloudflare 延迟](https://www.itdog.cn/http/${CF_HOST}/)"
+          else
+            CF_MSG="**Cloudflared:** 等待URL生成..."
+          fi
+
+          # ==========================================
+          # 7. 创建 Issue 并 @用户 (触发邮件通知)
+          # ==========================================
+          # 你的目标邮箱对应的用户名:
+          # 80138979+qwqlemon2333 -> @qwqlemon2333
+          # 156587835+KawaiiSparkle -> @KawaiiSparkle
+          
+          MENTIONS="@qwqlemon2333 @KawaiiSparkle"
+          
+          ISSUE_TITLE="🚀 SSH Tunnel Online $(date +%H:%M:%S)"
+          ISSUE_BODY=$(cat <<EOF
+          ${MENTIONS}
+
+          ### 连接信息
+          **密码:** 你们知道的那个
+
+          ---
+
+          **1. ${NGROK_MSG}**
+
+          **2. ${SERVEO_MSG}**
+
+          **3. ${CF_MSG}**
+
+          ---
+
+          *点击上方“测速链接”查看国内连通性*
+          EOF
+          )
+
+          # 调用 GitHub API 创建 Issue
+          # 这会自动发邮件给被 @ 的用户
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues \
+            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}"
+
+          echo "Notification sent to ${MENTIONS}"
         
-      - name: sleep for 20 mins
+      - name: sleep for 114514h
         run: |
           pwd
           date
