@@ -34,6 +34,8 @@ jobs:
     #       # rm -f get-pip.py
           
       - name: Start Tunnels and Notify Users
+        env:
+            USER_PASS: ${{ secrets.USER_PASS }}
         run: |
           # ==========================================
           # 1. 基础环境配置
@@ -78,10 +80,7 @@ jobs:
 
           # ==========================================
           # 6. 准备报告内容 (优化 Markdown 格式)
-          # ==========================================
-          
-          PASSWORD="${{ secrets.USER_PASS }}"
-          
+          # ==========================================          
           # --- Ngrok 处理 ---
           NGROK_URL=$(grep -o -E "tcp://(.+)" < .ngrok.log | sed "s/tcp:\/\///" | head -n 1)
           if [[ -n "$NGROK_URL" ]]; then
@@ -167,6 +166,7 @@ jobs:
             echo "Failed to create Issue."
             echo "Response: $RESPONSE"
           fi
+          
 
       - name: sleep for a minute
         run: |
