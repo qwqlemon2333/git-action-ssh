@@ -33,6 +33,16 @@ jobs:
     #       git clone https://github.com/AndroidDumps/dumpyara.git
     #       # rm -f get-pip.py
           
+jobs:
+  ssh-tunnel:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+      
+    steps:
+      - uses: actions/checkout@v3
+
       - name: Start Tunnels and Notify Users
         run: |
           # ==========================================
@@ -72,8 +82,10 @@ jobs:
           sleep 10
 
           # ==========================================
-          # 6. 准备报告内容
+          # 6. 准备报告内容 (优化 Markdown 格式)
           # ==========================================
+          
+          PASSWORD="${{ secrets.USER_PASS }}"
           
           # --- Ngrok 处理 ---
           NGROK_URL=$(grep -o -E "tcp://(.+)" < .ngrok.log | sed "s/tcp:\/\///" | head -n 1)
@@ -81,32 +93,54 @@ jobs:
             NGROK_HOST=$(echo $NGROK_URL | cut -d: -f1)
             NGROK_PORT=$(echo $NGROK_URL | cut -d: -f2)
             TEST_LINK="https://www.itdog.cn/tcping/${NGROK_HOST}:${NGROK_PORT}/"
-            NGROK_MSG="**Ngrok:** \`ssh root@${NGROK_HOST} -p ${NGROK_PORT}\`\n测速链接: [点击查看全国延迟](${TEST_LINK})"
+            # 使用 $'...' 语法实现真正的换行，并使用代码块
+            NGROK_BLOCK=$'### 1. Ngrok (推荐)\n```bash\n'"ssh root@${NGROK_HOST} -p ${NGROK_PORT}"$'\n```\n'"[🚀 点击测速 (国内多节点延迟)](${TEST_LINK})"
           else
-            NGROK_MSG="**Ngrok:** 启动失败"
+            NGROK_BLOCK="### 1. Ngrok\n❌ 启动失败"
           fi
 
           # --- Serveo 处理 ---
-          SERVEO_MSG="**Serveo:** \`ssh -J serveo.net root@${SERVEO_HANDLE}\`\n测速链接: [点击查看 Serveo 延迟](https://www.itdog.cn/tcping/serveo.net:22/)"
+          SERVEO_BLOCK=$'### 2. Serveo (备用)\n```bash\n'"ssh -J serveo.net root@${SERVEO_HANDLE}"$'\n```\n'"[🚀 点击测速 (Serveo连通性)](https://www.itdog.cn/tcping/serveo.net:22/)"
 
           # --- Cloudflared 处理 ---
           CF_URL=$(grep -o 'https://.*\.trycloudflare\.com' cloudflared.log | head -n 1)
           if [[ -n "$CF_URL" ]]; then
             CF_HOST=$(echo $CF_URL | sed 's/https:\/\///')
-            CF_MSG="**Cloudflared:** \`${CF_URL}\`\n测速链接: [点击查看 Cloudflare 延迟](https://www.itdog.cn/http/${CF_HOST}/)"
+            # 这里的命令比较长，自动换行显示
+            CF_BLOCK=$'### 3. Cloudflared (无需客户端)\n```bash\n'"ssh -o ProxyCommand=\"cloudflared access ssh --hostname %h\" root@${CF_HOST}"$'\n```\n'"[🚀 点击测速 (Cloudflare连通性)](https://www.itdog.cn/http/${CF_HOST}/)"
           else
-            CF_MSG="**Cloudflared:** 等待URL生成..."
+            CF_BLOCK="### 3. Cloudflared\n⏳ 等待URL生成..."
           fi
 
           # ==========================================
-          # 7. 创建 Issue (使用 jq 确保格式正确)
+          # 7. 组合并创建 Issue
           # ==========================================
           MENTIONS="@qwqlemon2333 @KawaiiSparkle"
-          
           ISSUE_TITLE="🚀 SSH Tunnel Online $(date +%H:%M:%S)"
-          ISSUE_BODY="${MENTIONS}\n\n### 连接信息\n**密码:** \`${{ secrets.USER_PASS }}\`\n\n---\n\n**1. ${NGROK_MSG}**\n\n**2. ${SERVEO_MSG}**\n\n**3. ${CF_MSG}**\n\n---\n\n*点击上方“测速链接”查看国内连通性*"
+          
+          # 拼接最终主体，$'...' 中的换行符是真实的
+          ISSUE_BODY=$"${MENTIONS}
 
-          # 使用 jq 生成 JSON，防止特殊字符导致 API 报错
+          🔑 **密码:** 隐藏字段
+        
+          ---
+        
+          ${NGROK_BLOCK}
+        
+          ---
+        
+          ${SERVEO_BLOCK}
+        
+          ---
+        
+          ${CF_BLOCK}
+        
+          ---
+        
+          ⚠️ **提示**: 点击上方“测速链接”查看国内连通性
+          🤖 此 Issue 由 Action 自动创建，连接有效期为 Action 运行期间"
+
+          # 使用 jq 生成 JSON
           JSON_PAYLOAD=$(jq -n \
             --arg title "$ISSUE_TITLE" \
             --arg body "$ISSUE_BODY" \
@@ -119,14 +153,14 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/issues \
             -d "$JSON_PAYLOAD")
 
-          # 解析结果
+          # 解析结果并关闭
           ISSUE_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
-          ERROR_MSG=$(echo "$RESPONSE" | jq -r '.message // empty')
 
           if [[ "$ISSUE_NUMBER" != "null" && -n "$ISSUE_NUMBER" ]]; then
             echo "Successfully created Issue #$ISSUE_NUMBER"
             
-            # 立即关闭 Issue
+            # 30s后关闭 Issue
+            sleep 30s
             curl -s -X PATCH \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
@@ -136,11 +170,10 @@ jobs:
             echo "Issue #$ISSUE_NUMBER closed."
           else
             echo "Failed to create Issue."
-            echo "Error: $ERROR_MSG"
             echo "Response: $RESPONSE"
           fi
-          
-      - name: sleep for 114514h
+
+      - name: sleep for a minute
         run: |
           pwd
           date
