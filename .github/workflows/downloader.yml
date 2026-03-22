@@ -98,12 +98,8 @@ jobs:
           fi
 
           # ==========================================
-          # 7. 创建 Issue 并 @用户 (触发邮件通知)
+          # 7. 创建 Issue -> 获取编号 -> 立即关闭
           # ==========================================
-          # 你的目标邮箱对应的用户名:
-          # 80138979+qwqlemon2333 -> @qwqlemon2333
-          # 156587835+KawaiiSparkle -> @KawaiiSparkle
-          
           MENTIONS="@qwqlemon2333 @KawaiiSparkle"
           
           ISSUE_TITLE="🚀 SSH Tunnel Online $(date +%H:%M:%S)"
@@ -111,7 +107,7 @@ jobs:
           ${MENTIONS}
 
           ### 连接信息
-          **密码:** 你们知道的那个
+          **密码:** \`${{ secrets.USER_PASS }}\`
 
           ---
 
@@ -127,16 +123,28 @@ jobs:
           EOF
           )
 
-          # 调用 GitHub API 创建 Issue
-          # 这会自动发邮件给被 @ 的用户
-          curl -s -X POST \
+          # 1. 创建 Issue 并获取返回的 JSON
+          RESPONSE=$(curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/issues \
-            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}"
+            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}")
 
-          echo "Notification sent to ${MENTIONS}"
-        
+          # 2. 提取 Issue 编号
+          ISSUE_NUMBER=$(echo "$RESPONSE" | jq '.number')
+          echo "Created Issue #$ISSUE_NUMBER"
+
+          # 3. 立即关闭 Issue (状态设为 closed)
+          curl -s -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER \
+            -d '{"state": "closed"}'
+
+          echo "Issue #$ISSUE_NUMBER has been closed automatically."
+
+          # 保持运行
+          
       - name: sleep for 114514h
         run: |
           pwd
