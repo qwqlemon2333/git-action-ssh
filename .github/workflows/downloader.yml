@@ -40,7 +40,12 @@ jobs:
           # ==========================================
           sudo apt-get update > /dev/null 2>&1
           sudo apt-get install -y openssh-server curl jq > /dev/null 2>&1
-          echo "root:${{ secrets.USER_PASS }}" | sudo chpasswd
+          if [[ -z "$USER_PASS" ]]; then
+            echo "Please set 'USER_PASS' for user: $USER"
+            exit 3
+          fi 
+          echo "### Update user: $USER password ###"
+          echo -e "$USER_PASS\n$USER_PASS" | sudo passwd "$USER"
           sudo service ssh start
 
           # ==========================================
