@@ -5,32 +5,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      issues: write  # 授予创建和关闭 Issue 的权限
+      contents: read
     steps:
       - uses: actions/checkout@v1
 
        
-    # You might want to Checkout your repo first, but not mandatory
-      - name: Check Out
-        uses: actions/checkout@v3
-    # Cleanup The Actions Workspace Using Custom Composite Run Actions
-      - name: Cleanup
-        uses: rokibhasansagar/slimhub_actions@main
+    # # You might want to Checkout your repo first, but not mandatory
+    #   - name: Check Out
+    #     uses: actions/checkout@v3
+    # # Cleanup The Actions Workspace Using Custom Composite Run Actions
+    #   - name: Cleanup
+    #     uses: rokibhasansagar/slimhub_actions@main
           
-      - name: Prepare the environment
-        run: |
-          sudo apt update
-          # sudo add-apt-repository universe
-          # sudo apt-get install fakeroot dpkg-dev libcurl4-openssl-dev python3 python3-pip python2 pigz -y
-          # sudo apt-get install aptitude -y
-          # sudo aptitude install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev -y
-          # sudo aptitude install openjdk-8-jdk -y
-          # curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-          # sudo python2 get-pip.py
-          sudo apt install cpio python3 git -y
-          sudo su
-          git clone https://github.com/AndroidDumps/dumpyara.git
-          # rm -f get-pip.py
+    #   - name: Prepare the environment
+    #     run: |
+    #       sudo apt update
+    #       # sudo add-apt-repository universe
+    #       # sudo apt-get install fakeroot dpkg-dev libcurl4-openssl-dev python3 python3-pip python2 pigz -y
+    #       # sudo apt-get install aptitude -y
+    #       # sudo aptitude install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev -y
+    #       # sudo aptitude install openjdk-8-jdk -y
+    #       # curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+    #       # sudo python2 get-pip.py
+    #       sudo apt install cpio python3 git -y
+    #       sudo su
+    #       git clone https://github.com/AndroidDumps/dumpyara.git
+    #       # rm -f get-pip.py
           
       - name: Start Tunnels and Notify Users
         run: |
@@ -98,52 +99,46 @@ jobs:
           fi
 
           # ==========================================
-          # 7. 创建 Issue -> 获取编号 -> 立即关闭
+          # 7. 创建 Issue (使用 jq 确保格式正确)
           # ==========================================
           MENTIONS="@qwqlemon2333 @KawaiiSparkle"
           
           ISSUE_TITLE="🚀 SSH Tunnel Online $(date +%H:%M:%S)"
-          ISSUE_BODY=$(cat <<EOF
-          ${MENTIONS}
+          ISSUE_BODY="${MENTIONS}\n\n### 连接信息\n**密码:** \`${{ secrets.USER_PASS }}\`\n\n---\n\n**1. ${NGROK_MSG}**\n\n**2. ${SERVEO_MSG}**\n\n**3. ${CF_MSG}**\n\n---\n\n*点击上方“测速链接”查看国内连通性*"
 
-          ### 连接信息
-          **密码:** \`${{ secrets.USER_PASS }}\`
+          # 使用 jq 生成 JSON，防止特殊字符导致 API 报错
+          JSON_PAYLOAD=$(jq -n \
+            --arg title "$ISSUE_TITLE" \
+            --arg body "$ISSUE_BODY" \
+            '{title: $title, body: $body}')
 
-          ---
-
-          **1. ${NGROK_MSG}**
-
-          **2. ${SERVEO_MSG}**
-
-          **3. ${CF_MSG}**
-
-          ---
-
-          *点击上方“测速链接”查看国内连通性*
-          EOF
-          )
-
-          # 1. 创建 Issue 并获取返回的 JSON
+          # 发送请求
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/issues \
-            -d "{\"title\": \"$ISSUE_TITLE\", \"body\": \"$ISSUE_BODY\"}")
+            -d "$JSON_PAYLOAD")
 
-          # 2. 提取 Issue 编号
-          ISSUE_NUMBER=$(echo "$RESPONSE" | jq '.number')
-          echo "Created Issue #$ISSUE_NUMBER"
+          # 解析结果
+          ISSUE_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+          ERROR_MSG=$(echo "$RESPONSE" | jq -r '.message // empty')
 
-          # 3. 立即关闭 Issue (状态设为 closed)
-          curl -s -X PATCH \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER \
-            -d '{"state": "closed"}'
-
-          echo "Issue #$ISSUE_NUMBER has been closed automatically."
-
-          # 保持运行
+          if [[ "$ISSUE_NUMBER" != "null" && -n "$ISSUE_NUMBER" ]]; then
+            echo "Successfully created Issue #$ISSUE_NUMBER"
+            
+            # 立即关闭 Issue
+            curl -s -X PATCH \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/issues/$ISSUE_NUMBER \
+              -d '{"state": "closed"}'
+            
+            echo "Issue #$ISSUE_NUMBER closed."
+          else
+            echo "Failed to create Issue."
+            echo "Error: $ERROR_MSG"
+            echo "Response: $RESPONSE"
+          fi
           
       - name: sleep for 114514h
         run: |
@@ -152,14 +147,14 @@ jobs:
           sleep 10h
           date
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: | 
-            output.zip
-          name: ${{ github.run_id }}
-          tag_name: ${{ github.run_id }}
-          body: |
-            ${{ github.run_id }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Upload to Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     files: | 
+      #       output.zip
+      #     name: ${{ github.run_id }}
+      #     tag_name: ${{ github.run_id }}
+      #     body: |
+      #       ${{ github.run_id }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
