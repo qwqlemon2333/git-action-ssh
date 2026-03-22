@@ -88,20 +88,20 @@ jobs:
             NGROK_PORT=$(echo $NGROK_URL | cut -d: -f2)
             TEST_LINK="https://www.itdog.cn/tcping/${NGROK_HOST}:${NGROK_PORT}/"
             # 使用 $'...' 语法实现真正的换行，并使用代码块
-            NGROK_BLOCK=$'### 1. Ngrok (推荐)\n```bash\n'"ssh root@${NGROK_HOST} -p ${NGROK_PORT}"$'\n```\n'"[🚀 点击测速 (国内多节点延迟)](${TEST_LINK})"
+            NGROK_BLOCK=$'### 1. Ngrok (推荐)\n```bash\n'"ssh ${USER}@${NGROK_HOST} -p ${NGROK_PORT}"$'\n```\n'"[🚀 点击测速 (国内多节点延迟)](${TEST_LINK})"
           else
             NGROK_BLOCK="### 1. Ngrok\n❌ 启动失败"
           fi
 
           # --- Serveo 处理 ---
-          SERVEO_BLOCK=$'### 2. Serveo (备用)\n```bash\n'"ssh -J serveo.net root@${SERVEO_HANDLE}"$'\n```\n'"[🚀 点击测速 (Serveo连通性)](https://www.itdog.cn/tcping/serveo.net:22/)"
+          SERVEO_BLOCK=$'### 2. Serveo (备用)\n```bash\n'"ssh -J serveo.net ${USER}@${SERVEO_HANDLE}"$'\n```\n'"[🚀 点击测速 (Serveo连通性)](https://www.itdog.cn/tcping/serveo.net:22/)"
 
           # --- Cloudflared 处理 ---
           CF_URL=$(grep -o 'https://.*\.trycloudflare\.com' cloudflared.log | head -n 1)
           if [[ -n "$CF_URL" ]]; then
             CF_HOST=$(echo $CF_URL | sed 's/https:\/\///')
             # 这里的命令比较长，自动换行显示
-            CF_BLOCK=$'### 3. Cloudflared (无需客户端)\n```bash\n'"ssh -o ProxyCommand=\"cloudflared access ssh --hostname %h\" root@${CF_HOST}"$'\n```\n'"[🚀 点击测速 (Cloudflare连通性)](https://www.itdog.cn/http/${CF_HOST}/)"
+            CF_BLOCK=$'### 3. Cloudflared (无需客户端)\n```bash\n'"ssh -o ProxyCommand=\"cloudflared access ssh --hostname %h\" ${USER}@${CF_HOST}"$'\n```\n'"[🚀 点击测速 (Cloudflare连通性)](https://www.itdog.cn/http/${CF_HOST}/)"
           else
             CF_BLOCK="### 3. Cloudflared\n⏳ 等待URL生成..."
           fi
